@@ -12,7 +12,37 @@ Resources:
     Properties: 
       Roles:
         - UdacityS3ReadOnlyEC2
-Outputs: 
+  MainVPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      EnableDnsSupport: true
+      Tags:
+        - Key: Name
+          Value: Lesson 5 VPC
+
+  SomeInternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: Internet Access Lesson 5
+
+  SomeGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref MainVPC
+      InternetGatewayId: !Ref SomeInternetGateway
+
+  SomeSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Select [ 1, !GetAZs '']
+      VpcId: !Ref MainVPC
+      CidrBlock: 10.0.0.0/24 
+      Tags:
+        - Key: Name
+          Value: Lesson 5 Public subnet (AZ1)
   # This is also optional.
   # Bonus points for useful outputs!
   # for example, if you create a Load Balancer
