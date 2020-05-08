@@ -1,0 +1,195 @@
+Description: Udagram app infraestructure
+
+Parameters:
+  EnvName:
+    Description: Name of the environment. 
+    Type: String
+  BastionAccessIp:
+    Description: Ip address for where bastion can be accessed
+    Type: String
+  BastionImageId:
+    Description: AIM image for bastion pc
+    Type: String
+    Default: ami-003634241a8fcdec0
+
+Resources:
+  BastionSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: BastionSecurityGroup
+      GroupDescription: Security group for network entry poing
+      VpcId:
+        Fn::ImportValue:
+          !Sub ${EnvName}-MainVpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: !Ref BastionAccessIp
+      SecurityGroupEgress:
+        - IpProtocol: tcp
+          FromPort: 0
+          ToPort: 65535
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvName} bastion security group
+
+  BastionServer:
+    Type: AWS::EC2::Instance
+    Properties:
+      KeyName: migue@pangea
+      DisableApiTermination: false
+      ImageId: !Ref BastionImageId
+      InstanceType: t2.micro
+      Monitoring: false
+      NetworkInterfaces: 
+      - AssociatePublicIpAddress: "true"
+        DeviceIndex: "0"
+        GroupSet: 
+          - !Ref BastionSecurityGroup
+        SubnetId: 
+          Fn::ImportValue: !Sub ${EnvName}-PublicSubnetAid
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvName} bastion
+
+  MainAppSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: MainAppSecurityGroup
+      GroupDescription: !Sub ${EnvName} main app security group
+      VpcId:
+        Fn::ImportValue: !Sub ${EnvName}-MainVpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+      SecurityGroupEgress:
+        - IpProtocol: tcp
+          FromPort: 0
+          ToPort: 65535
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvName} main app servers security group
+
+  MainAppLaunchConfig:
+    Type: AWS::AutoScaling::LaunchConfiguration
+    Properties:
+      LaunchConfigurationName: MainAppConfiguration
+      AssociatePublicIpAddress: false
+      # IamInstanceProfile: -
+      ImageId: !Ref BastionImageId
+      EbsOptimized: false
+      InstanceMonitoring: false
+      InstanceType: t2.micro
+      KeyName: udagram-internal
+      SecurityGroups:
+        - !Ref MainAppSecurityGroup
+      UserData:
+        Fn::Base64: !Sub |
+           #!/bin/bash
+           apt-get update -y
+           apt-get install apache2 -y
+           systemctl start apache2.service
+           cd /var/www/html
+           echo "Udacity Demo Web Server Up and Running!" > index.html
+
+
+  MainAppASG:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      VPCZoneIdentifier:
+        - Fn::ImportValue: !Sub ${EnvName}-PrivateSubnetAid
+        - Fn::ImportValue: !Sub ${EnvName}-PrivateSubnetBid
+      LaunchConfigurationName: 
+        Ref: MainAppLaunchConfig
+      MaxSize: 2
+      MinSize: 2
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvName} main app server
+          PropagateAtLaunch: true
+      TargetGroupARNs:
+        - Ref: MainAppLBTargetGroup
+  
+  MainAppLBSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: MainAppLBSecurityGroup
+      GroupDescription: !Sub ${EnvName} main app load balancer security group
+      VpcId:
+        Fn::ImportValue: !Sub ${EnvName}-MainVpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+      SecurityGroupEgress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+
+  MainAppLB:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      SecurityGroups:
+        - !Ref MainAppLBSecurityGroup
+      Subnets:
+        - Fn::ImportValue: !Sub ${EnvName}-PublicSubnetAid
+        - Fn::ImportValue: !Sub ${EnvName}-PublicSubnetBid
+  
+  MainAppLBListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      LoadBalancerArn:
+        Ref: MainAppLB
+      Port: 80
+      Protocol: HTTP
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: 
+            Ref: MainAppLBTargetGroup
+
+  ALBListenerRule:
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    Properties:
+      Actions:
+      - Type: forward
+        TargetGroupArn: !Ref MainAppLBTargetGroup
+      Conditions:
+      - Field: path-pattern
+        Values: [/]
+      ListenerArn: !Ref MainAppLBListener
+      Priority: 1
+
+  MainAppLBTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties: 
+      HealthCheckEnabled: true
+      HealthCheckIntervalSeconds: 10
+      HealthCheckPath: /
+      HealthCheckPort: 80
+      HealthCheckProtocol: HTTP
+      HealthCheckTimeoutSeconds: 3
+      HealthyThresholdCount: 3
+      # Matcher: 
+      #   HttpCode: 200
+      Name: !Sub ${EnvName}-main-app-lb-tg
+      Port: 80
+      Protocol: HTTP
+      # Tags: 
+      #   - Tag
+      UnhealthyThresholdCount: 3
+      VpcId: 
+        Fn::ImportValue: !Sub ${EnvName}-MainVpcId
+  
+
+      

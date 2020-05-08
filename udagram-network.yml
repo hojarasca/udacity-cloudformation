@@ -64,6 +64,7 @@ Resources:
         AvailabilityZone: !Select [0, !GetAZs '']
         VpcId: !Ref MainVPC
         CidrBlock: !Ref PublicSubnetACidr
+        MapPublicIpOnLaunch: true
         Tags:
           - Key: Name
             Value: !Sub ${EnvName} public subnet A
@@ -74,6 +75,7 @@ Resources:
       AvailabilityZone: !Select [1, !GetAZs '']
       VpcId: !Ref MainVPC
       CidrBlock: !Ref PublicSubnetBCidr
+      MapPublicIpOnLaunch: true
       Tags:
         - Key: Name
           Value: !Sub ${EnvName} public subnet B
@@ -206,3 +208,18 @@ Outputs:
     Value: !Ref PublicSubnetA
     Export:
       Name: !Sub ${EnvName}-PublicSubnetAid
+  PublicSubnetB:
+    Description: Id of the public network in AZ "B"
+    Value: !Ref PublicSubnetB
+    Export:
+      Name: !Sub ${EnvName}-PublicSubnetBid
+  PrivateSubnetA:
+    Description: Id of the private network in AZ "A"
+    Value: !Ref PrivateSubnetA
+    Export:
+      Name: !Sub ${EnvName}-PrivateSubnetAid
+  PrivateSubnetB:
+    Description: Id of the private network in AZ "B"
+    Value: !Ref PrivateSubnetB
+    Export:
+      Name: !Sub ${EnvName}-PrivateSubnetBid

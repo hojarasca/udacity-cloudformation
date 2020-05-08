@@ -1,0 +1,10 @@
+[
+  {
+    "ParameterKey": "EnvName",
+    "ParameterValue": "Udagram"
+  },
+  {
+    "ParameterKey": "BastionAccessIp",
+    "ParameterValue": "181.22.116.32/0"
+  }
+]
