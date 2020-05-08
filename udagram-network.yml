@@ -195,3 +195,14 @@ Resources:
       SubnetId: !Ref PrivateSubnetB
       RouteTableId: !Ref PrivateRouteTableB
   
+Outputs:
+  MainVPC:
+    Description: Projects main vpc
+    Value: !Ref MainVPC
+    Export: 
+      Name: !Sub ${EnvName}-MainVpcId
+  PublicSubnetA:
+    Description: Id of the public network in AZ "A"
+    Value: !Ref PublicSubnetA
+    Export:
+      Name: !Sub ${EnvName}-PublicSubnetAid

@@ -1,0 +1,26 @@
+Description: Udagram app infraestructure
+
+Parameters:
+  EnvName:
+    Description: Name of the environment. 
+    Type: String
+
+Resources:
+  BastionServer:
+    Type: AWS::EC2::Instance
+    Properties:
+      KeyName: migue@pangea
+      DisableApiTermination: false
+      ImageId: !Ref BastionImageId
+      InstanceType: t2.micro
+      Monitoring: false
+      NetworkInterfaces: 
+      - AssociatePublicIpAddress: "true"
+        DeviceIndex: "0"
+        GroupSet: 
+          - !Ref SomeSecurityGroup
+        SubnetId: 
+          Ref: SomeSubnet
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvName} bastion
