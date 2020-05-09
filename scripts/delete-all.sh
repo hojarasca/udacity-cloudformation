@@ -1,9 +1,5 @@
 #!/bin/bash
-CURRENT_DIR="$(dirname "$0")"
-source "$CURRENT_DIR/functions.sh"
 set -e
-
-load-config
-
-delete-stack $APPLICATION_STACK_NAME
-delete-stack $NETWORK_STACK_NAME
+CURRENT_DIR="$(dirname "$0")"
+source "$CURRENT_DIR/delete-application.sh"
+source "$CURRENT_DIR/delete-network.sh"

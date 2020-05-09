@@ -1,9 +1,5 @@
 #!/bin/bash
-CURRENT_DIR="$(dirname "$0")"
-source "$CURRENT_DIR/functions.sh"
 set -e
-
-load-config
-
-deploy-stack $NETWORK_STACK_NAME "$CURRENT_DIR/../templates/udagram-network.yml" "$CURRENT_DIR/../templates/udagram-network-params.json"
-deploy-stack $APPLICATION_STACK_NAME "$CURRENT_DIR/../templates/udagram-application.yml" "$CURRENT_DIR/../templates/udagram-application-params.json"
+CURRENT_DIR="$(dirname "$0")"
+source "$CURRENT_DIR/deploy-network.sh"
+source "$CURRENT_DIR/deploy-application.sh"
