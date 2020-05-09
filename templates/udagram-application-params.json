@@ -1,7 +1,7 @@
 [
   {
     "ParameterKey": "EnvName",
-    "ParameterValue": "Udagram"
+    "ParameterValue": "udagram"
   },
   {
     "ParameterKey": "BastionAccessIp",
@@ -10,5 +10,9 @@
   {
     "ParameterKey": "SourceCodeS3Bucket",
     "ParameterValue": "udagram-test-hojarasca"
+  },
+  {
+    "ParameterKey": "MainAppInstanceType",
+    "ParameterValue": "t2.micro"
   }
 ]

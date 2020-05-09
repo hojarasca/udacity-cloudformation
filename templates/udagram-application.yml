@@ -10,6 +10,13 @@ Parameters:
   SourceCodeS3Bucket:
     Description: S3 bucket with app source code
     Type: String
+  MainAppInstanceType:
+    Description: Instance type used to deploy the main app
+    Type: String
+  BastionSshKey:
+    Description: ssh key used for bastion server
+    Type: String
+    Default: migue@pangea
 
 Resources:
   #
@@ -129,7 +136,7 @@ Resources:
   BastionServer:
     Type: AWS::EC2::Instance
     Properties:
-      KeyName: migue@pangea
+      KeyName: !Ref BastionSshKey
       DisableApiTermination: false
       ImageId: ami-003634241a8fcdec0
       InstanceType: t2.micro
@@ -175,8 +182,8 @@ Resources:
       ImageId: ami-003634241a8fcdec0
       EbsOptimized: false
       InstanceMonitoring: false
-      InstanceType: t2.micro
-      KeyName: udagram-internal
+      InstanceType: !Ref MainAppInstanceType
+      KeyName: !Sub ${EnvName}-internal
       SecurityGroups:
         - !Ref MainAppSecurityGroup
       BlockDeviceMappings:
@@ -259,6 +266,8 @@ Resources:
 Outputs:
   AppUrl:
     Description: Project main url
-    Value: !GetAtt MainAppLB.DNSName
+    Value: !Sub 
+      - http://${URL}
+      - { URL: !GetAtt MainAppLB.DNSName }
     Export: 
       Name: !Sub ${EnvName}-AppUrl
