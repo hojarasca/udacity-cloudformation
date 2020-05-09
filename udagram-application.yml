@@ -87,10 +87,10 @@ Resources:
           FromPort: 80
           ToPort: 80
           SourceSecurityGroupId: !Ref MainAppLBSecurityGroup
-        # - IpProtocol: tcp
-        #   FromPort: 22
-        #   ToPort: 22
-        #   SourceSecurityGroupId: !Ref BastionSecurityGroup
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          SourceSecurityGroupId: !Ref BastionSecurityGroup
       SecurityGroupEgress:
         - IpProtocol: tcp
           FromPort: 0
@@ -247,3 +247,10 @@ Resources:
       UnhealthyThresholdCount: 3
       VpcId: 
         Fn::ImportValue: !Sub ${EnvName}-MainVpcId
+
+Outputs:
+  AppUrl:
+    Description: Project main url
+    Value: !GetAtt MainAppLB.DNSName
+    Export: 
+      Name: !Sub ${EnvName}-MainVpcId
