@@ -164,7 +164,7 @@ Resources:
       VpcId: !Ref MainVPC
       Tags:
         - Key: Name
-          Value: !Sub ${EnvName} route table for private subnet A
+          Value: !Sub ${EnvName} route table for private subnet A 22
   DefaultRoutePrivateTableA:
     Type: AWS::EC2::Route
     Properties:
