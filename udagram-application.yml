@@ -253,4 +253,4 @@ Outputs:
     Description: Project main url
     Value: !GetAtt MainAppLB.DNSName
     Export: 
-      Name: !Sub ${EnvName}-MainVpcId
+      Name: !Sub ${EnvName}-AppUrl
