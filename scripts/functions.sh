@@ -40,3 +40,8 @@ function delete-stack {
   # wait until delete finishes
   aws cloudformation wait stack-delete-complete --stack-name $1
 }
+
+function load-config {
+  local CURRENT_DIR="$(dirname "$0")"
+  source $CURRENT_DIR/../config.sh
+}

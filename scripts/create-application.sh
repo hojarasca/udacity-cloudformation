@@ -1,8 +1,8 @@
 #!/bin/bash
 CURRENT_DIR="$(dirname "$0")"
-
 source "$CURRENT_DIR/functions.sh"
-
 set -e
 
-create-stack udagram-test-1-application "$CURRENT_DIR/../templates/udagram-application.yml" "$CURRENT_DIR/../templates/udagram-application-params.json"
+load-config
+
+create-stack $APPLICATION_STACK "$CURRENT_DIR/../templates/udagram-application.yml" "$CURRENT_DIR/../templates/udagram-application-params.json"

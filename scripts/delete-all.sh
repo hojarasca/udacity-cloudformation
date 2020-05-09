@@ -1,9 +1,9 @@
 #!/bin/bash
 CURRENT_DIR="$(dirname "$0")"
-
 source "$CURRENT_DIR/functions.sh"
-
 set -e
 
-delete-stack udagram-test-1-application
-delete-stack udagram-test-1
+load-config
+
+delete-stack $APPLICATION_STACK_NAME
+delete-stack $NETWORK_STACK_NAME
