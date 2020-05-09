@@ -7,10 +7,6 @@ Parameters:
   BastionAccessIp:
     Description: Ip address for where bastion can be accessed
     Type: String
-  BastionImageId:
-    Description: AIM image for bastion pc
-    Type: String
-    Default: ami-003634241a8fcdec0
   SourceCodeS3Bucket:
     Description: S3 bucket with app source code
     Type: String
@@ -91,10 +87,10 @@ Resources:
           FromPort: 80
           ToPort: 80
           SourceSecurityGroupId: !Ref MainAppLBSecurityGroup
-        - IpProtocol: tcp
-          FromPort: 22
-          ToPort: 22
-          SourceSecurityGroupId: !Ref BastionSecurityGroup
+        # - IpProtocol: tcp
+        #   FromPort: 22
+        #   ToPort: 22
+        #   SourceSecurityGroupId: !Ref BastionSecurityGroup
       SecurityGroupEgress:
         - IpProtocol: tcp
           FromPort: 0
@@ -135,7 +131,7 @@ Resources:
     Properties:
       KeyName: migue@pangea
       DisableApiTermination: false
-      ImageId: !Ref BastionImageId
+      ImageId: ami-003634241a8fcdec0
       InstanceType: t2.micro
       Monitoring: false
       IamInstanceProfile: !Ref AccessS3BucketInstanceProfile
@@ -172,7 +168,7 @@ Resources:
       LaunchConfigurationName: MainAppConfiguration2
       AssociatePublicIpAddress: false
       IamInstanceProfile: !Ref AccessS3BucketInstanceProfile
-      ImageId: !Ref BastionImageId
+      ImageId: ami-003634241a8fcdec0
       EbsOptimized: false
       InstanceMonitoring: false
       InstanceType: t2.micro
