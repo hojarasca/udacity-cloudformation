@@ -7,16 +7,17 @@ Parameters:
   BastionAccessIp:
     Description: Ip address for where bastion can be accessed
     Type: String
+  BastionSshKey:
+    Description: ssh key used for bastion server
+    Type: String
+    Default: migue@pangea
   SourceCodeS3Bucket:
     Description: S3 bucket with app source code
     Type: String
   MainAppInstanceType:
     Description: Instance type used to deploy the main app
     Type: String
-  BastionSshKey:
-    Description: ssh key used for bastion server
-    Type: String
-    Default: migue@pangea
+    Default: t3.medium # 2 vCPU, 4GiB ram
 
 Resources:
   #
@@ -166,7 +167,7 @@ Resources:
       LaunchConfigurationName: 
         Ref: MainAppLaunchConfig
       MinSize: 2
-      MaxSize: 2
+      MaxSize: 6
       Tags:
         - Key: Name
           Value: !Sub ${EnvName} main app server
@@ -204,7 +205,6 @@ Resources:
           aws s3 cp s3://${SourceCodeS3Bucket}/site.zip site.zip
           unzip -o site.zip
           rm site.zip
-
   
   #
   # Load balancer
