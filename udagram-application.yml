@@ -104,7 +104,7 @@ Resources:
         - Key: Name
           Value: !Sub ${EnvName} main app servers security group
 
-MainAppLBSecurityGroup:
+  MainAppLBSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupName: MainAppLBSecurityGroup
