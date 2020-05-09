@@ -16,6 +16,47 @@ Parameters:
     Type: String
 
 Resources:
+  #
+  # IAM
+  #
+  AccessS3BucketInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: /
+      Roles:
+        - Ref: AccessS3BucketRole
+
+  AccessS3BucketRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: AccessS3BucketRole
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+              - ec2.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Policies:
+        - 
+         PolicyName: "access-s3-elements"
+         PolicyDocument:
+           Version: "2012-10-17"
+           Statement:
+              - 
+                Effect: "Allow"
+                Action: 
+                  - s3:GetObject
+                  - s3:ListBucket
+                Resource: 
+                  - !Sub arn:aws:s3:::${SourceCodeS3Bucket}
+                  - !Sub arn:aws:s3:::${SourceCodeS3Bucket}/*
+
+  #
+  # Security groups
+  #
   BastionSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
@@ -37,27 +78,7 @@ Resources:
       Tags:
         - Key: Name
           Value: !Sub ${EnvName} bastion security group
-
-  BastionServer:
-    Type: AWS::EC2::Instance
-    Properties:
-      KeyName: migue@pangea
-      DisableApiTermination: false
-      ImageId: !Ref BastionImageId
-      InstanceType: t2.micro
-      Monitoring: false
-      IamInstanceProfile: !Ref AccessS3BucketInstanceProfile
-      NetworkInterfaces: 
-      - AssociatePublicIpAddress: "true"
-        DeviceIndex: "0"
-        GroupSet: 
-          - !Ref BastionSecurityGroup
-        SubnetId: 
-          Fn::ImportValue: !Sub ${EnvName}-PublicSubnetAid
-      Tags:
-        - Key: Name
-          Value: !Sub ${EnvName} bastion
-
+  
   MainAppSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
@@ -83,6 +104,68 @@ Resources:
         - Key: Name
           Value: !Sub ${EnvName} main app servers security group
 
+MainAppLBSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: MainAppLBSecurityGroup
+      GroupDescription: !Sub ${EnvName} main app load balancer security group
+      VpcId:
+        Fn::ImportValue: !Sub ${EnvName}-MainVpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+  MainAppLBEgressRule:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !GetAtt MainAppLBSecurityGroup.GroupId 
+      IpProtocol: tcp
+      FromPort: 80
+      ToPort: 80
+      DestinationSecurityGroupId: !Ref MainAppSecurityGroup
+
+
+
+  #
+  # Computation (servers, scaling groups)
+  #
+  BastionServer:
+    Type: AWS::EC2::Instance
+    Properties:
+      KeyName: migue@pangea
+      DisableApiTermination: false
+      ImageId: !Ref BastionImageId
+      InstanceType: t2.micro
+      Monitoring: false
+      IamInstanceProfile: !Ref AccessS3BucketInstanceProfile
+      NetworkInterfaces: 
+      - AssociatePublicIpAddress: "true"
+        DeviceIndex: "0"
+        GroupSet: 
+          - !Ref BastionSecurityGroup
+        SubnetId: 
+          Fn::ImportValue: !Sub ${EnvName}-PublicSubnetAid
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvName} bastion
+
+  MainAppASG:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      VPCZoneIdentifier:
+        - Fn::ImportValue: !Sub ${EnvName}-PrivateSubnetAid
+        - Fn::ImportValue: !Sub ${EnvName}-PrivateSubnetBid
+      LaunchConfigurationName: 
+        Ref: MainAppLaunchConfig
+      MaxSize: 2
+      MinSize: 2
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvName} main app server
+          PropagateAtLaunch: true
+      TargetGroupARNs:
+        - Ref: MainAppLBTargetGroup
   MainAppLaunchConfig:
     Type: AWS::AutoScaling::LaunchConfiguration
     Properties:
@@ -111,45 +194,10 @@ Resources:
           unzip -o site.zip
           rm site.zip
 
-  MainAppASG:
-    Type: AWS::AutoScaling::AutoScalingGroup
-    Properties:
-      VPCZoneIdentifier:
-        - Fn::ImportValue: !Sub ${EnvName}-PrivateSubnetAid
-        - Fn::ImportValue: !Sub ${EnvName}-PrivateSubnetBid
-      LaunchConfigurationName: 
-        Ref: MainAppLaunchConfig
-      MaxSize: 2
-      MinSize: 2
-      Tags:
-        - Key: Name
-          Value: !Sub ${EnvName} main app server
-          PropagateAtLaunch: true
-      TargetGroupARNs:
-        - Ref: MainAppLBTargetGroup
   
-  MainAppLBSecurityGroup:
-    Type: AWS::EC2::SecurityGroup
-    Properties:
-      GroupName: MainAppLBSecurityGroup
-      GroupDescription: !Sub ${EnvName} main app load balancer security group
-      VpcId:
-        Fn::ImportValue: !Sub ${EnvName}-MainVpcId
-      SecurityGroupIngress:
-        - IpProtocol: tcp
-          FromPort: 80
-          ToPort: 80
-          CidrIp: 0.0.0.0/0
-  
-  MainAppLBEgressRule:
-    Type: AWS::EC2::SecurityGroupEgress
-    Properties:
-      GroupId: !GetAtt MainAppLBSecurityGroup.GroupId 
-      IpProtocol: tcp
-      FromPort: 80
-      ToPort: 80
-      DestinationSecurityGroupId: !Ref MainAppSecurityGroup
-
+  #
+  # Load balancer
+  #
   MainAppLB:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
     Properties:
@@ -203,39 +251,3 @@ Resources:
       UnhealthyThresholdCount: 3
       VpcId: 
         Fn::ImportValue: !Sub ${EnvName}-MainVpcId
-
-
-  AccessS3BucketInstanceProfile:
-    Type: AWS::IAM::InstanceProfile
-    Properties:
-      Path: /
-      Roles:
-        - Ref: AccessS3BucketRole
-
-  AccessS3BucketRole:
-    Type: AWS::IAM::Role
-    Properties:
-      RoleName: AccessS3BucketRole
-      AssumeRolePolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service:
-              - ec2.amazonaws.com
-            Action:
-              - 'sts:AssumeRole'
-      Policies:
-        - 
-         PolicyName: "access-s3-elements"
-         PolicyDocument:
-           Version: "2012-10-17"
-           Statement:
-              - 
-                Effect: "Allow"
-                Action: 
-                  - s3:GetObject
-                  - s3:ListBucket
-                Resource: 
-                  - !Sub arn:aws:s3:::${SourceCodeS3Bucket}
-                  - !Sub arn:aws:s3:::${SourceCodeS3Bucket}/*
