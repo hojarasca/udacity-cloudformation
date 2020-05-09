@@ -11,6 +11,9 @@ Parameters:
     Description: AIM image for bastion pc
     Type: String
     Default: ami-003634241a8fcdec0
+  SourceCodeS3Bucket:
+    Description: S3 bucket with app source code
+    Type: String
 
 Resources:
   BastionSecurityGroup:
@@ -18,6 +21,7 @@ Resources:
     Properties:
       GroupName: BastionSecurityGroup
       GroupDescription: Security group for network entry poing
+
       VpcId:
         Fn::ImportValue:
           !Sub ${EnvName}-MainVpcId
@@ -43,6 +47,7 @@ Resources:
       ImageId: !Ref BastionImageId
       InstanceType: t2.micro
       Monitoring: false
+      IamInstanceProfile: !Ref AccessS3BucketInstanceProfile
       NetworkInterfaces: 
       - AssociatePublicIpAddress: "true"
         DeviceIndex: "0"
@@ -82,9 +87,9 @@ Resources:
   MainAppLaunchConfig:
     Type: AWS::AutoScaling::LaunchConfiguration
     Properties:
-      LaunchConfigurationName: MainAppConfiguration
+      LaunchConfigurationName: MainAppConfiguration2
       AssociatePublicIpAddress: false
-      # IamInstanceProfile: -
+      IamInstanceProfile: !Ref AccessS3BucketInstanceProfile
       ImageId: !Ref BastionImageId
       EbsOptimized: false
       InstanceMonitoring: false
@@ -94,13 +99,18 @@ Resources:
         - !Ref MainAppSecurityGroup
       UserData:
         Fn::Base64: !Sub |
-           #!/bin/bash
-           apt-get update -y
-           apt-get install apache2 -y
-           systemctl start apache2.service
-           cd /var/www/html
-           echo "Udacity Demo Web Server Up and Running!" > index.html
-
+          #!/bin/bash
+          apt-get update -y
+          apt-get install apache2 -y
+          apt-get install unzip -y
+          systemctl start apache2.service
+          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+          unzip awscliv2.zip
+          sudo ./aws/install
+          cd /var/www/html
+          aws s3 cp s3://${SourceCodeS3Bucket}/site.zip site.zip
+          unzip -o site.zip
+          rm site.zip
 
   MainAppASG:
     Type: AWS::AutoScaling::AutoScalingGroup
@@ -190,6 +200,39 @@ Resources:
       UnhealthyThresholdCount: 3
       VpcId: 
         Fn::ImportValue: !Sub ${EnvName}-MainVpcId
-  
 
-      
+
+  AccessS3BucketInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: /
+      Roles:
+        - Ref: AccessS3BucketRole
+
+  AccessS3BucketRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: AccessS3BucketRole
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+              - ec2.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Policies:
+        - 
+         PolicyName: "access-s3-elements"
+         PolicyDocument:
+           Version: "2012-10-17"
+           Statement:
+              - 
+                Effect: "Allow"
+                Action: 
+                  - s3:GetObject
+                  - s3:ListBucket
+                Resource: 
+                  - !Sub arn:aws:s3:::${SourceCodeS3Bucket}
+                  - !Sub arn:aws:s3:::${SourceCodeS3Bucket}/*
