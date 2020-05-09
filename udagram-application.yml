@@ -148,24 +148,28 @@ Resources:
 
   MainAppASG:
     Type: AWS::AutoScaling::AutoScalingGroup
+    UpdatePolicy: 
+      AutoScalingRollingUpdate: 
+        MinInstancesInService: "1"
+        MaxBatchSize: "1"
     Properties:
       VPCZoneIdentifier:
         - Fn::ImportValue: !Sub ${EnvName}-PrivateSubnetAid
         - Fn::ImportValue: !Sub ${EnvName}-PrivateSubnetBid
       LaunchConfigurationName: 
         Ref: MainAppLaunchConfig
-      MaxSize: 2
       MinSize: 2
+      MaxSize: 2
       Tags:
         - Key: Name
           Value: !Sub ${EnvName} main app server
           PropagateAtLaunch: true
       TargetGroupARNs:
         - Ref: MainAppLBTargetGroup
+
   MainAppLaunchConfig:
     Type: AWS::AutoScaling::LaunchConfiguration
     Properties:
-      LaunchConfigurationName: MainAppConfiguration2
       AssociatePublicIpAddress: false
       IamInstanceProfile: !Ref AccessS3BucketInstanceProfile
       ImageId: ami-003634241a8fcdec0
@@ -175,6 +179,10 @@ Resources:
       KeyName: udagram-internal
       SecurityGroups:
         - !Ref MainAppSecurityGroup
+      BlockDeviceMappings:
+        - DeviceName: "/dev/sda1"
+          Ebs:
+              VolumeSize: 10
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash
