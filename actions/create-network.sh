@@ -5,4 +5,4 @@ set -e
 
 load-config
 
-create-stack $NETWORK_STACK_NAME "$CURRENT_DIR/../templates/udagram-network.yml" "$CURRENT_DIR/../templates/udagram-network-params.json"
+create-stack $NETWORK_STACK_NAME "$CURRENT_DIR/../templates/network.yml" "$CURRENT_DIR/../templates/network-params.json"

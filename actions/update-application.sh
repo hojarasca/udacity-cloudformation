@@ -5,4 +5,4 @@ set -e
 
 load-config
 
-update-stack $APPLICATION_STACK_NAME "$CURRENT_DIR/../templates/udagram-application.yml" "$CURRENT_DIR/../templates/udagram-application-params.json"
+update-stack $APPLICATION_STACK_NAME "$CURRENT_DIR/../templates/application.yml" "$CURRENT_DIR/../templates/application-params.json"
